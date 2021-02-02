@@ -5,7 +5,7 @@ from .serializers import PeliculaSerializers, PeliculaFavoritaSerializers
 
 from django.shortcuts import get_object_or_404
 
-from rest_framework import viewsets, views
+from rest_framework import serializers, viewsets, views, filters
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -14,6 +14,10 @@ from rest_framework.response import Response
 class PeliculaViewSet(viewsets.ModelViewSet):
     queryset = Pelicula.objects.all()
     serializer_class = PeliculaSerializers
+
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['titulo', 'estreno']
+    ordering_fields = ['favoritos']
 
 
 class MarcarPeliculaFavorita(views.APIView):
@@ -44,3 +48,18 @@ class MarcarPeliculaFavorita(views.APIView):
 
 
 
+class ListarPeliculasFavoritas(views.APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+# get -. se usa para hacer lecturas
+
+    def get(self, request):
+        peliculas_favoritas = PeliculaFavorita.objects.filter(
+            usuario = request.user
+        )
+        serializer = PeliculaFavoritaSerializers(
+            peliculas_favoritas, many = True
+        )
+
+        return Response(serializer.data)
